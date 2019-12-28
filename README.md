@@ -1,2 +1,2 @@
-# SIPS_V2
+# SIPS V2
 Version 2 proyecto SIPS U

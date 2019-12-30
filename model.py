@@ -13,7 +13,11 @@ from gurobipy import quicksum
 # =============================================================================
 # READ DATA
 # =============================================================================
-def mainModel():
+def run(verbose=False):
+    """
+    Realiza Optimización de Despacho con Seguridad para 
+    horizonte de tiempo sin considerar relajo de restricciones.
+    """
     M = 10000
     NGen = 3
     NLin = 3
@@ -86,6 +90,10 @@ def mainModel():
     # =============================================================================
     #Define problem
     model  = gp.Model("Model")
+    if not verbose:
+        model.setParam('OutputFlag',0)
+    else:
+        model.setParam('OutputFlag',1)
     #Variables
     p =     model.addVars(NGen,NSce,NHrs, vtype=GRB.CONTINUOUS)
     x =     model.addVars(NGen,NHrs, vtype=GRB.BINARY)
@@ -186,8 +194,8 @@ def mainModel():
     # =============================================================================
     model.setObjective(Objective, GRB.MINIMIZE)
     model.optimize()
-    print('=== RESULTS: ===')
-    print(model.objVal)
+   
+    print('Costos Totales:',model.objVal)
                 
     # =============================================================================
     # SAVE RESULTS
@@ -216,7 +224,9 @@ def mainModel():
     np.save('results\\ECOXRUPSOL',xrupsol)
     np.save('results\\ECOXRDOWNSOL',xrdownsol)
     np.save('results\\ECODEM',D)
+    
+    return model.objVal
 
 if __name__ == '__main__':
-    mainModel()
+    run()
     

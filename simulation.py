@@ -46,7 +46,7 @@ def createNet(include_bat=False):
     for i in range(numgen):
         pp.create_gen(net, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
                       max_p_mw = GENDATA[i][9], min_p_mw = GENDATA[i][10],max_q_mvar=GENDATA[i][11], 
-                      min_q_mvar=GENDATA[i][12], controllable=True)
+                      min_q_mvar=GENDATA[i][12], controllable=True, vm_pu=1.01)
         #create trafos     
         barcon = GENDATA[i][1]
         if(barcon>j):

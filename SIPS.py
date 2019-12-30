@@ -11,68 +11,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-
-# model.mainModel()
-simulation.solve()
-
-
-def getNumberOfLineLimitsViolations(line):
-    simlin = np.load('results\\SIMLIN.npy') 
-    NHrs =  24
-    NSce =  7
-    line_loading_column = 9
-    cnt =   0
-    for s in range(NSce):
-        for t in range(NHrs):
-            if(simlin[t,s,line,line_loading_column]>1.001):
-                cnt=cnt+1
-    return cnt
-    
-def getLineLimitsViolations(line):
-    simlin = np.load('results\\SIMLIN.npy') 
-    instances = []
-    NHrs =  24
-    NSce =  7
-    line_loading_column = 13
-    cnt =   0
-    for s in range(NSce):
-        for t in range(NHrs):
-            if(simlin[t,s,line,line_loading_column]>115.0):
-                cnt=cnt+1
-                instances.append((t,s,simlin[t,s,line,line_loading_column]))
-    return cnt,instances
-
-
-
-
-
-x1,ins = getLineLimitsViolations(1)
-print(x1)
-print(ins)
-
-
-# simgen = np.load('results\\SIMGEN.npy') #t,s,g,field
-# print(simgen[0,2,0,:])
-# ecogen = np.load('results\\ECOPSOL.npy') #g,s,t
-# print(ecogen[0,2,0])
-
-
-
-
-
 # simbus = np.load('results\\SIMBUS.npy') #(24,7,6,4)
 # simlin = np.load('results\\SIMLIN.npy') #(24,7,3,14)
 # simtrf = np.load('results\\SIMTRF.npy') #(24,7,3,13)
 # simgen = np.load('results\\SIMGEN.npy') #(24,7,3,4)
 # simsto = np.load('results\\SIMSTO.npy') #(24,7,3,2)
 # print(simsto)
-
-# line = 2 #0,1
-# scen = 6 #1,2
-# cat = 9 #line loading
-# plt.plot(simlin[:,scen,line,cat])
-# plt.ylim((0.9,1.1))
-#simbus = 
 
 
 

@@ -1,7 +1,9 @@
 import xlwings as xw
 import pandapower as pp
+import numpy as np
 
-def createNet(filename_data):
+def createNet(include_bat=False):
+    filename_data = 'data_3_bus.xlsx'
     wbd = xw.Book(filename_data)
     sd = wbd.sheets['data']
     
@@ -25,7 +27,7 @@ def createNet(filename_data):
     # CREATE BUSES
     # =========================================================================
     for i in range(numgen):
-        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.1, min_vm_pu=0.9)
+        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.05, min_vm_pu=0.95)
         
     cntidx = NUMNODES
     j=-1
@@ -35,7 +37,7 @@ def createNet(filename_data):
         barcon = GENDATA[i][1]
         if(barcon>j):
             j=j+1
-            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.03, min_vm_pu=0.97)
+            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.05, min_vm_pu=0.95)
             
     # =========================================================================
     # CREATE GENERATORS
@@ -44,7 +46,7 @@ def createNet(filename_data):
     for i in range(numgen):
         pp.create_gen(net, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
                       max_p_mw = GENDATA[i][9], min_p_mw = GENDATA[i][10],max_q_mvar=GENDATA[i][11], 
-                      min_q_mvar=GENDATA[i][12], controllable=False)
+                      min_q_mvar=GENDATA[i][12], controllable=True)
         #create trafos     
         barcon = GENDATA[i][1]
         if(barcon>j):
@@ -72,8 +74,8 @@ def createNet(filename_data):
     # =========================================================================
     # CREATE STORAGE
     # =========================================================================
-    for i in range(3,5):
-        pp.create_storage(net,  bus=i, p_mw = 0, q_mvar=0, max_e_mwh=100, in_service=False)
+    for i in range(3,6):
+        pp.create_storage(net,  bus=i, p_mw = 0, q_mvar=0, max_e_mwh=100, in_service=include_bat)
         
     return net
 
@@ -84,33 +86,39 @@ def createNet(filename_data):
 # =============================================================================
 # TAKE RESULTS AND SIMULATE
 # =============================================================================
-def solve(PGEN, filename_data,include_bat=False):
-
-    numele = 5
-    numSce = 7
-    numHrs = 24
-    numbus = 6
-    numline = 3
-    numtrafo = 3
-    numgen = 3
-    numsto = 3
+def solve():
+    PGEN = np.load('results\\ECOPSOL.npy')   
+    DEM = np.load('results\\ECODEM.npy')
+    NHrs = 24
+    NSce = 7
+    SIMBUS = np.ndarray((NHrs,NSce,6,4))
+    SIMLIN = np.ndarray((NHrs,NSce,3,14))
+    SIMTRF = np.ndarray((NHrs,NSce,3,13))
+    SIMGEN = np.ndarray((NHrs,NSce,3,4))
+    SIMSTO = np.ndarray((NHrs,NSce,3,2))
     
-    M = numHrs*[numSce*[numele*[numbus*[4*[0]] ,numline*[14*[0]],numtrafo*[13*[0]],numgen*[4*[0]],numsto*[2*[0]]]]]
-    net = createNet(filename_data)
-    for t in range(numHrs):
-        for s in range(numSce):
+    net = createNet()
+    num_not_convergence = 0
+    not_convergence_data = [] #(s,t) scen,hour (
+    for t in range(NHrs):
+        print('Simulating Hour ',t+1,'/ 24 ...')
+        for s in range(NSce):
+            #reset availability of elements
             for i in range(3):
                 net.gen['in_service']=True
                 net.line['in_service']=True
-            # print('Simulating Scenario '+str(s)+'. Please wait...')
+            #set demand of generators
             for i in range(3):
                 net.gen['p_mw'][i] = PGEN[i,s,t]
-                
+            #set demand
+            for i in range(3):
+                net.load['p_mw'][i] = DEM[i,t]
+            #set unavailable element generator or line
             if (0<s and s<=3):
                 net.gen['in_service'][s-1]=False
             elif(s>3):
                 net.line['in_service'][s-4]=False
-            
+            #set slack bus
             if s==1:
                 net.gen['slack'][0]=False
                 net.gen['slack'][1]=True
@@ -118,26 +126,37 @@ def solve(PGEN, filename_data,include_bat=False):
             else:
                 net.gen['slack'][0]=True
                 net.gen['slack'][1]=False
-            # print(net.gen['slack'])
-            # print(net.gen['in_service'])
                 
             #Run power flow
-            pp.runpp(net)    
+            try:
+                pp.runpp(net,max_iteration=20, enforce_q_lims=True)  
+                #Save results into file
+                SIMBUS[t,s] = net.res_bus.values
+                SIMLIN[t,s] = net.res_line.values
+                SIMTRF[t,s] = net.res_trafo.values
+                SIMGEN[t,s] = net.res_gen.values
+                SIMSTO[t,s] = net.res_storage.values
+            except:
+                print('Power Flow did not converge:')
+                print('Hour:',t)
+                print('Scenario:',s)
+                print('Data gen:')
+                print(PGEN[:,s,t])
+                num_not_convergence = num_not_convergence + 1
+                not_convergence_data.append((s,t))
             
-            #Save Results
-            M[t][s][0] = net.res_bus
-            M[t][s][1] = net.res_line
-            M[t][s][2] = net.res_trafo
-            M[t][s][3] = net.res_gen
-            M[t][s][4] = net.res_storage
             
-            # M[t][s][0] = net.res_bus.values.tolist()
-            # M[t][s][1] = net.res_line.values.tolist()
-            # M[t][s][2] = net.res_trafo.values.tolist()
-            # M[t][s][3] = net.res_gen.values.tolist()
-            # M[t][s][4] = net.res_storage.values.tolist()
             
+          
+    SIMNOTCONV = np.array(not_convergence_data)        
+    np.save('results\\SIMBUS',SIMBUS)
+    np.save('results\\SIMLIN',SIMLIN)
+    np.save('results\\SIMTRF',SIMTRF)
+    np.save('results\\SIMGEN',SIMGEN)
+    np.save('results\\SIMSTO',SIMSTO)
+    np.save('results\\SIMNOTCONV',SIMNOTCONV)
+    print('End Simulations!')
+    print('Number of not convergence:',num_not_convergence)
 
-    return M
-    # print('End Simulations!')
-    
+if __name__ == '__main__':
+    solve()

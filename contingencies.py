@@ -7,7 +7,7 @@ Created on Mon Dec 30 12:53:32 2019
 
 import numpy as np
 
-def getLineLimitsViolations(line, tolerance=1.15):
+def getLineLimitsViolations(line, tolerance):
     """
     Entrega las instancias de violacion de límites de capacidad de transferencia en las líneas.
     Devuelve una lista con tuplas (t,s,loading)
@@ -27,7 +27,7 @@ def getLineLimitsViolations(line, tolerance=1.15):
 
 
 
-def getInstancesLineLimitsViolations():
+def getInstancesLineLimitsViolations(tolerance=1.15):
     """
     Entrega lista con pares ordenados (t,s) de momentos donde se violan límites de capacidad de líneas.
     """
@@ -36,7 +36,7 @@ def getInstancesLineLimitsViolations():
     #filtrar contingencias que se repiten
     datacontaux = []
     for l in numLin:
-        x = getLineLimitsViolations(l)
+        x = getLineLimitsViolations(l,tolerance)
         for i in x:
             datacontaux.append((i[0],i[1]))
     return list(set(datacontaux))

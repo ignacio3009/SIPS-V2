@@ -5,51 +5,79 @@
 # @author: ignac
 # """
 
-
-
-
 import model as mod
 import modelrelax as modrelax
 import contingencies as cont
 import sipscreator as sipscreator
+import simulation as sm
 import numpy as np
 
 
-#Simulación Económica
-# cost1 = mod.run() #caso full
-# cost2 = modrelax.relaxLine(1.5,1) #caso relajado
-# ahorrocosto = cost1-cost2
-# print('Ahorro Costos:',ahorrocosto, 'USD')
 
-
-#Seleccionar contingencias que producen sobrecarga de líneas nsl
-datacont = cont.getInstancesLineLimitsViolations()
-
-#SIPS 1: Baterias
-# costsipsbat = sipscreator.sipsbattery(datacont)
-# print('Costos Operación SIPSBAT', costsipsbat,'USD')
-
-evalsipsbat = np.load('results\\EVALSIPSBAT.npy') # (nsl,3,2)
-
-pmaxbat=0
-indexmaxp = 0
-for i in range(len(evalsipsbat)):
-    data  = evalsipsbat[i,:,0]
-    sumpbat = sum(abs(data))
-    if(sumpbat>pmaxbat):
-        indexmaxp = i
-        pmaxbat = sumpbat
-
-print('Máxima potencia instalada baterías:',pmaxbat)
-print('Detalles')
-print('Q = ', evalsipsbat[indexmaxp,:,1])
-print('P = ', evalsipsbat[indexmaxp,:,0])
-
-    
-    
+#Simular todo
+def optimizeeco():
+    #Simulación Económica
+    cost1 = mod.run() #caso full
+    # cost2 = modrelax.relaxLine(1.2,1) #caso relajado
+    cost2 = modrelax.relaxLine([1,2],[1.2,1.2])
+    ahorrocosto = cost1-cost2
+    print('Ahorro Costos:',ahorrocosto, 'USD')
     
 
 
+
+def evaluatesipsbattery():
+    optimizeeco()
+    sm.simulateAll()
+    #Seleccionar contingencias que producen sobrecarga de líneas nsl
+    datacont = cont.getInstancesLineLimitsViolations(tolerance=1.6)
+    
+    #SIPS 1: Baterias
+    costsipsbat = sipscreator.sipsbattery(datacont,print_results=True, verbose=True)
+    print('Costos Operación SIPSBAT', costsipsbat,'USD')
+    evalsipsbat = np.load('results\\EVALSIPSBAT.npy') # (nsl,3,2)
+    
+    pmaxbat= [0,0,0]
+    pminbat= [0,0,0]
+    
+    qmaxbat=[0,0,0]
+    qminbat=[0,0,0]
+    
+    
+    for i in range(len(evalsipsbat)):
+        data = evalsipsbat[i]
+        for j in range(len(data)):
+            pb = data[j,0]
+            qb = data[j,1]
+            #Max p
+            if pb>pmaxbat[j]:
+                pmaxbat[j] = pb
+            if qb>qmaxbat[j]:
+                qmaxbat[j] = qb
+            #Min p
+            if pb<pminbat[j]:
+                pminbat[j] = pb
+            if qb<qminbat[j]:
+                qminbat[j] = qb
+        
+        
+    
+    print('Máxima potencia instalada baterías:',pmaxbat)
+    print('Detalles')
+    print('Qmax = ', qmaxbat)
+    print('Pmax = ', pmaxbat)
+    print('Qmin = ', qminbat)
+    print('Pmin = ',pminbat)
+    
+
+
+
+
+evaluatesipsbattery()
+# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.7)
+    
+# #SIPS 1: Baterias
+# costsipsbat = sipscreator.sipsloadshedding(datacont,print_results=True,verbose=True)
 
 
 

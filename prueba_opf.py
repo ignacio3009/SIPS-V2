@@ -24,9 +24,9 @@ pp.create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
 pp.create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
 
 #create loads
-pp.create_load(net, bus2, p_mw=60, controllable=False)
-pp.create_load(net, bus3, p_mw=70, controllable=False)
-pp.create_load(net, bus4, p_mw=10, controllable=False)
+load1 = pp.create_load(net, bus2, p_mw=60, min_p_mw= 30, max_p_mw =60, min_q_mvar= 0, max_q_mvar = 10, controllable=True)
+load2 = pp.create_load(net, bus3, p_mw=70, controllable=False)
+load3 = pp.create_load(net, bus4, p_mw=10, controllable=False)
 
 #create generators
 eg = pp.create_ext_grid(net, bus1, min_p_mw=-1000, max_p_mw=1000)
@@ -38,6 +38,7 @@ costgen1 = pp.create_poly_cost(net, 0, 'gen', cp1_eur_per_mw=15)
 costgen2 = pp.create_poly_cost(net, 1, 'gen', cp1_eur_per_mw=12)
 
 # net.load['p_mw'][0]=100
+costload1 = pp.create_poly_cost(net, load1, 'load', cp1_eur_per_mw = 1)
 
 
 

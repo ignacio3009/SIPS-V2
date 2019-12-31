@@ -9,6 +9,7 @@ from gurobipy import GRB
 import numpy as np
 import xlwings as xw
 from gurobipy import quicksum
+import loaddata as ld
 
 # =============================================================================
 # READ DATA
@@ -36,11 +37,9 @@ def run(verbose=False):
     numHrs = range(NHrs)
     numScF = range(1,NSce)
     
-    wb = xw.Book('data_3_bus.xlsx')
-    sh = wb.sheets['data']
+    GENDATA,DEMDATA,LINDATA,STODATA = ld.loadsystemdata()
     
     #Generator data
-    GENDATA = np.array(sh.range('A4:N6').value)
     genBar =    GENDATA[:,1]
     CV =        GENDATA[:,2]
     CRUP =      GENDATA[:,3]
@@ -55,31 +54,19 @@ def run(verbose=False):
     QMINGEN =   GENDATA[:,12]
     
     #Demand data
-    DEMDATA =   np.array(sh.range('P4:R6').value)
     DPMAX =     DEMDATA[:,1]
     DQMAX =     DEMDATA[:,2]
     
     #Line data
-    LINDATA =   np.array(sh.range('T4:Z6').value)
     FMAX =      LINDATA[:,1]
     XL =        LINDATA[:,4]
     
     
-    #Battery data
-    STODATA =   np.array(sh.range('AB4:AM6').value)
-    
-    
     #Scenarios data
-    A =  np.array(sh.range('AP4:AV6').value)
-    B =  np.array(sh.range('AP7:AV9').value)
-    PROB = np.array(sh.range('AW4:AW9').value)
+    A, B,PROB = ld.loadscendata()
     
-    
-    
-    shlc = wb.sheets['loadcurve']
-    DEMRES = np.array(shlc.range('B2:B25').value)
-    DEMIND = np.array(shlc.range('C2:C25').value)
-    DEMCOM = np.array(shlc.range('D2:D25').value)
+    #Demand data
+    DEMRES, DEMIND, DEMCOM  = ld.loadcurvedata()
     
     D = np.array([DPMAX[0]*DEMRES,DPMAX[1]*DEMIND,DPMAX[2]*DEMCOM])
     

@@ -1,21 +1,15 @@
-import xlwings as xw
 import pandapower as pp
 import numpy as np
+import loaddata as ld
 
-def createNet(include_bat=False):
-    filename_data = 'data_3_bus.xlsx'
-    wbd = xw.Book(filename_data)
-    sd = wbd.sheets['data']
-    
-    GENDATA = sd.range('A4:N6').value
-    DEMDATA = sd.range('P4:R6').value
-    LINDATA = sd.range('T4:Z6').value
-    BATDATA = sd.range('AB4:AM6').value
+def createnet(include_load_shedding=False, include_bat=False):
+    GENDATA,DEMDATA,LINDATA,STODATA = ld.loadsystemdata()
     NUMNODES = 3
 
     numgen = len(GENDATA)
     numlin = len(LINDATA)
     numdem = len(DEMDATA)
+    numsto = len(STODATA)
     
     # =========================================================================
     # CREATE EMPTY NET
@@ -43,10 +37,12 @@ def createNet(include_bat=False):
     # CREATE GENERATORS
     # =========================================================================    
     j=-1
+    indexgen=0
     for i in range(numgen):
-        pp.create_gen(net, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
+        pp.create_gen(net, index=indexgen, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
                       max_p_mw = GENDATA[i][9], min_p_mw = GENDATA[i][10],max_q_mvar=GENDATA[i][11], 
-                      min_q_mvar=GENDATA[i][12], controllable=True, vm_pu=1.01)
+                      min_q_mvar=GENDATA[i][12], controllable=True)
+        indexgen = indexgen + 1
         #create trafos     
         barcon = GENDATA[i][1]
         if(barcon>j):
@@ -64,18 +60,26 @@ def createNet(include_bat=False):
         pp.create_line(net, from_bus=LINDATA[i][2], to_bus=LINDATA[i][3], length_km=LINDATA[i][6], std_type="typ"+str(i))
         
         
+    
+        
     # =========================================================================
     # CREATE LOADS
     # =========================================================================
     for i in range(numdem):
-        pp.create_load(net,  bus=DEMDATA[i][0], p_mw = DEMDATA[i][1], q_mvar=DEMDATA[i][2])
-
+        pp.create_load(net, index=i, bus=DEMDATA[i][0], p_mw = DEMDATA[i][1], q_mvar=DEMDATA[i][2],
+                       max_p_mw = DEMDATA[i][1], min_p_mw=DEMDATA[i][4], 
+                       max_q_mvar = DEMDATA[i][2], min_q_mvar=DEMDATA[i][5],
+                       controllable = include_load_shedding)
+        pp.create_poly_cost(net,i,'load',cp1_eur_per_mw=DEMDATA[i][3])
         
     # =========================================================================
     # CREATE STORAGE
     # =========================================================================
-    for i in range(3,6):
-        pp.create_storage(net,  bus=i, p_mw = 0, q_mvar=0, max_e_mwh=100, in_service=include_bat)
+    for i in range(numsto):
+        pp.create_storage(net, index=i, bus=NUMNODES + i, p_mw = 0, q_mvar=0, max_e_mwh=1000, 
+                          max_p_mw = STODATA[i][7], min_p_mw=STODATA[i][8], max_q_mvar=STODATA[i][9],
+                          min_q_mvar= STODATA[i][10], in_service=include_bat, controllable=include_bat)
+        pp.create_poly_cost(net,i,'storage',cp1_eur_per_mw=STODATA[i][2])
         
     return net
 
@@ -84,9 +88,10 @@ def createNet(include_bat=False):
 
 
 # =============================================================================
-# TAKE RESULTS AND SIMULATE
+# TAKE RESULTS AND SIMULATE 
 # =============================================================================
-def solve():
+def simulateAll():
+    print('Run power flow all scenarios for each hour')
     PGEN = np.load('results\\ECOPSOL.npy')   
     DEM = np.load('results\\ECODEM.npy')
     NHrs = 24
@@ -97,7 +102,7 @@ def solve():
     SIMGEN = np.ndarray((NHrs,NSce,3,4))
     SIMSTO = np.ndarray((NHrs,NSce,3,2))
     
-    net = createNet()
+    net = createnet()
     num_not_convergence = 0
     not_convergence_data = [] #(s,t) scen,hour (
     for t in range(NHrs):
@@ -159,4 +164,4 @@ def solve():
     print('Number of not convergence:',num_not_convergence)
 
 if __name__ == '__main__':
-    solve()
+    simulateAll()

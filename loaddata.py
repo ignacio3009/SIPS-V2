@@ -34,7 +34,7 @@ def loadscendata(filename='data_3_bus.xlsx'):
     wb = xw.Book(filename)
     sh = wb.sheets['data']
     range_A = 'AS4:AY6'
-    range_B = 'AS6:AY9'
+    range_B = 'AS7:AY9'
     range_prob = 'AZ4:AZ9'
     A =  np.array(sh.range(range_A).value)
     B =  np.array(sh.range(range_B).value)
@@ -56,3 +56,16 @@ def loadcurvedata(filename='data_3_bus.xlsx'):
     DEMCOM = np.array(shlc.range(range_demcom).value)
     
     return DEMRES, DEMIND, DEMCOM
+
+def loadreserves(filename='data_3_bus.xlsx'):
+    wb = xw.Book(filename)
+    sh = wb.sheets['data']
+    range_rupmax = 'H4:H6'
+    range_rdownmax = 'I4:I6'
+    RUPMAX =    np.array(sh.range(range_rupmax).value)
+    RDOWNMAX =  np.array(sh.range(range_rdownmax).value) 
+    return RUPMAX, RDOWNMAX
+    
+def loadgendata(filename='data_3_bus.xlsx'):
+    GENDATA,DEMDATA,LINDATA,STODATA = loadsystemdata()
+    return GENDATA

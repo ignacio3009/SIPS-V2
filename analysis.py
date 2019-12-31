@@ -30,7 +30,7 @@ def evaluatesipsbattery():
     optimizeeco()
     sm.simulateAll()
     #Seleccionar contingencias que producen sobrecarga de líneas nsl
-    datacont = cont.getInstancesLineLimitsViolations(tolerance=1.6)
+    datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
     
     #SIPS 1: Baterias
     costsipsbat = sipscreator.sipsbattery(datacont,print_results=True, verbose=True)
@@ -73,7 +73,7 @@ def evaluatesipsbattery():
 
 
 
-evaluatesipsbattery()
+# evaluatesipsbattery()
 # datacont = cont.getInstancesLineLimitsViolations(tolerance=1.7)
     
 # #SIPS 1: Baterias
@@ -81,7 +81,8 @@ evaluatesipsbattery()
 
 
 
-
+datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
+print('Number of points out of limits:',len(datacont),'/',24*7)
 
 
 

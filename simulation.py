@@ -21,7 +21,7 @@ def createnet(include_load_shedding=False, include_bat=False):
     # CREATE BUSES
     # =========================================================================
     for i in range(numgen):
-        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.05, min_vm_pu=0.95)
+        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.1, min_vm_pu=0.9)
         
     cntidx = NUMNODES
     j=-1
@@ -31,7 +31,7 @@ def createnet(include_load_shedding=False, include_bat=False):
         barcon = GENDATA[i][1]
         if(barcon>j):
             j=j+1
-            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.05, min_vm_pu=0.95)
+            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.1, min_vm_pu=0.9)
             
     # =========================================================================
     # CREATE GENERATORS
@@ -39,7 +39,7 @@ def createnet(include_load_shedding=False, include_bat=False):
     j=-1
     indexgen=0
     for i in range(numgen):
-        pp.create_gen(net, index=indexgen, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
+        pp.create_gen(net, vm_pu=1.02, index=indexgen, bus=GENDATA[i][1], p_mw = 0, sn_mva = GENDATA[i][13],
                       max_p_mw = GENDATA[i][9], min_p_mw = GENDATA[i][10],max_q_mvar=GENDATA[i][11], 
                       min_q_mvar=GENDATA[i][12], controllable=True)
         indexgen = indexgen + 1

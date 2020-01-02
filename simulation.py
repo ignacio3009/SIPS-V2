@@ -21,7 +21,7 @@ def createnet(include_load_shedding=False, include_bat=False):
     # CREATE BUSES
     # =========================================================================
     for i in range(numgen):
-        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.1, min_vm_pu=0.9)
+        pp.create_bus(net,vn_kv=220, index = i, max_vm_pu=1.05, min_vm_pu=0.95)
         
     cntidx = NUMNODES
     j=-1
@@ -31,7 +31,7 @@ def createnet(include_load_shedding=False, include_bat=False):
         barcon = GENDATA[i][1]
         if(barcon>j):
             j=j+1
-            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.1, min_vm_pu=0.9)
+            pp.create_bus(net, index = cntidx+j, vn_kv=13.8, max_vm_pu=1.05, min_vm_pu=0.95)
             
     # =========================================================================
     # CREATE GENERATORS
@@ -47,7 +47,7 @@ def createnet(include_load_shedding=False, include_bat=False):
         barcon = GENDATA[i][1]
         if(barcon>j):
             j=j+1
-        pp.create_transformer(net, hv_bus=GENDATA[i][1], lv_bus=cntidx+j, std_type="250 MVA 220/13.8 kV")
+        pp.create_transformer(net, hv_bus=GENDATA[i][1], lv_bus=cntidx+j, std_type="500 MVA 220/13.8 kV")
              
     # =========================================================================
     # CREATE LINES
@@ -76,7 +76,7 @@ def createnet(include_load_shedding=False, include_bat=False):
     # CREATE STORAGE
     # =========================================================================
     for i in range(numsto):
-        pp.create_storage(net, index=i, bus=NUMNODES + i, p_mw = 0, q_mvar=0, max_e_mwh=1000, 
+        pp.create_storage(net, index=i, bus=NUMNODES + i, p_mw = 0, q_mvar=0, max_e_mwh=100000, 
                           max_p_mw = STODATA[i][7], min_p_mw=STODATA[i][8], max_q_mvar=STODATA[i][9],
                           min_q_mvar= STODATA[i][10], in_service=include_bat, controllable=include_bat)
         pp.create_poly_cost(net,i,'storage',cp1_eur_per_mw=STODATA[i][2])

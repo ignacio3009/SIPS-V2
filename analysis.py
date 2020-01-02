@@ -26,14 +26,14 @@ def optimizeeco():
 
 
 
-def evaluatesipsbattery():
-    optimizeeco()
-    sm.simulateAll()
+def evaluatesipsbattery(relax_vm=None, tolerance=1.3):
+    # optimizeeco()
+    # sm.simulateAll()
     #Seleccionar contingencias que producen sobrecarga de líneas nsl
-    datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
-    
+    datacont = cont.getInstancesLineLimitsViolations(tolerance=tolerance)
+    # datacont = [(23,4)]
     #SIPS 1: Baterias
-    costsipsbat = sipscreator.sipsbattery(datacont,print_results=True, verbose=True)
+    costsipsbat = sipscreator.sipsbattery(datacont,relax_vm,print_results=True, verbose=True)
     print('Costos Operación SIPSBAT', costsipsbat,'USD')
     evalsipsbat = np.load('results\\EVALSIPSBAT.npy') # (nsl,3,2)
     
@@ -67,22 +67,23 @@ def evaluatesipsbattery():
     print('Qmax = ', qmaxbat)
     print('Pmax = ', pmaxbat)
     print('Qmin = ', qminbat)
-    print('Pmin = ',pminbat)
+    print('Pmin = ', pminbat)
+
     
 
 
 
 
-# evaluatesipsbattery()
-# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.7)
-    
+evaluatesipsbattery(relax_vm=[0.85, 1.15])
+# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
+# cost = sipscreator.sipsloadshedding(datacont,print_results=True,verbose=True)
 # #SIPS 1: Baterias
 # costsipsbat = sipscreator.sipsloadshedding(datacont,print_results=True,verbose=True)
 
 
 
-datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
-print('Number of points out of limits:',len(datacont),'/',24*7)
+# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
+# print('Number of points out of limits:',len(datacont),'/',24*7)
 
 
 

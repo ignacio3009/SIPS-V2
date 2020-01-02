@@ -53,10 +53,10 @@ def evalsipsbattery(net,t,s,PGEN,DEM,XSOL,GENDATA,print_results=False):
     numGen = 3
     INF = 1e32
     
-    geninservice = False
+    # geninservice = False
     for i in range(numGen):
         if (net.gen['in_service'][i]):
-            geninservice=True
+            # geninservice=True
             net.gen['slack'][i] = True
             break
     
@@ -72,6 +72,8 @@ def evalsipsbattery(net,t,s,PGEN,DEM,XSOL,GENDATA,print_results=False):
             print(net.res_storage)
             print('Results Generators')
             print(net.res_gen)
+            print('Line Loading')
+            print(net.res_line['loading_percent'][:])
         return net.res_cost, net.res_storage.values
     except:
         print('OPF not converges')
@@ -131,14 +133,21 @@ def sipsbattery(datacont,relax_vm=None, print_results=False, verbose=False):
 
     
 
-def evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,print_results=False):
+def evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,DEMDATA, print_results=False, verbose=False):
+    print('PGEN:',PGEN[:,0,t])
+    print('DEM:',DEM[:,t ])
     net = confignet(net,t,s,PGEN,DEM,XSOL,GENDATA)
-    MINCOST=0
+    
     numGen = 3
-    for i in range(numGen):
-        pp.create_poly_cost(net, i ,'gen', cp1_eur_per_mw=MINCOST)
-    numGen = 3
+    numBar = 3
     INF = 1e32
+    
+    for i in range(numBar):
+        net.load['p_mw'][i] = DEM[i,t]
+        net.load['min_p_mw'][i] = max(DEM[i,t]-DEMDATA[i][4],0)
+        net.load['max_p_mw'][i] = DEM[i,t]
+        
+    
     
     geninservice = False
     for i in range(numGen):
@@ -154,17 +163,16 @@ def evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,print_results=False):
         net.gen['max_p_mw'] = PGEN[0,0,t]
         net.gen['min_p_mw'] = PGEN[0,0,t]
         
-        
     #Run Optimal Power Flow
-    net.trafo['max_loading_percent']=100
-    net.line['max_loading_percent'] =100
     try:
         pp.runopp(net)
         if print_results:
-            print('Results Load Shedding:')
+            print('Results Loads:')
             print(net.res_load)
             print('Results Generators')
             print(net.res_gen)
+            print('Line Loading')
+            print(net.res_line['loading_percent'][:])
         return net.res_cost, net.res_load.values
     except:
         print('OPF not converges')
@@ -173,10 +181,21 @@ def evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,print_results=False):
         return INF, np.ndarray((3,2))
 
 
-def sipsloadshedding(datacont, print_results=False, verbose=False):
+def sipsloadshedding(datacont, relax_vm=None, print_results=False, verbose=False):
     GENDATA = ld.loadgendata()
+    DEMDATA = ld.loaddemdata()
     XSOL = np.load('results\\ECOXSOL.npy')
     net = sm.createnet(include_load_shedding=True)
+    numGen  = 3
+    MINCOST = 0
+    for i in range(numGen):
+        pp.create_poly_cost(net, i ,'gen', cp1_eur_per_mw=MINCOST)
+    
+    net.trafo['max_loading_percent']=100
+    net.line['max_loading_percent'] =100
+    if relax_vm is not None:
+        net.bus["min_vm_pu"] = relax_vm[0]
+        net.bus["max_vm_pu"] = relax_vm[1]
     print('Simulating scenarios with overloading lines and proposing corrective actions with load shedding. This may take some time...')
     totalcost = 0
     #Create function costs:
@@ -196,10 +215,110 @@ def sipsloadshedding(datacont, print_results=False, verbose=False):
             print('Case:',i+1,'/',numcases)
             print('Scenario:',s)
             print('Hour:',t)
-        cost,EVALSIPSLOADSHEDDING[i] = evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL,GENDATA)
+        cost,EVALSIPSLOADSHEDDING[i] = evalsipsloadshedding(net,t,s,PGEN,DEM,XSOL,GENDATA,DEMDATA, print_results=print_results)
         totalcost = totalcost+cost
     np.save('results\\EVALSIPSLOADSHEDDING',EVALSIPSLOADSHEDDING)
     if(print_results):
         print('------------------------')
         print('Costos Totales:',totalcost)
     return totalcost
+
+
+
+# =============================================================================
+# LOAD SHEDDING + BATTERIES
+# =============================================================================
+def evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,DEMDATA, print_results=False, verbose=False):
+    print('PGEN:',PGEN[:,0,t])
+    print('DEM:',DEM[:,t ])
+    net = confignet(net,t,s,PGEN,DEM,XSOL,GENDATA)
+    
+    numGen = 3
+    numBar = 3
+    INF = 1e32
+    
+    for i in range(numBar):
+        net.load['p_mw'][i] = DEM[i,t]
+        net.load['min_p_mw'][i] = max(DEM[i,t]-DEMDATA[i][4],0)
+        net.load['max_p_mw'][i] = DEM[i,t]
+        
+    
+    
+    geninservice = False
+    for i in range(numGen):
+        if (net.gen['in_service'][i]):
+            geninservice=True
+            net.gen['slack'][i] = True
+            break
+    
+    #Define slack bus
+    if not geninservice:
+        net.gen['slack'][0] = True
+        net.gen['p_mw'][0] = PGEN[0,0,t]
+        net.gen['max_p_mw'] = PGEN[0,0,t]
+        net.gen['min_p_mw'] = PGEN[0,0,t]
+        
+    #Run Optimal Power Flow
+    try:
+        pp.runopp(net)
+        if print_results:
+            print('Results Loads:')
+            print(net.res_load)
+            print('Results Storage')
+            print(net.res_storage)
+            print('Results Generators')
+            print(net.res_gen)
+            print('Line Loading')
+            print(net.res_line['loading_percent'][:])
+        return net.res_cost, net.res_load.values
+    except:
+        print('OPF not converges')
+        print('Pgen:', PGEN[:,s,t])
+        print('Dem:',DEM[:,t])
+        return INF, np.ndarray((3,2))
+    
+
+def sipsbatteryloadshedding(datacont, relax_vm=None, print_results=False, verbose=False):
+    GENDATA = ld.loadgendata()
+    DEMDATA = ld.loaddemdata()
+    XSOL = np.load('results\\ECOXSOL.npy')
+    net = sm.createnet(include_load_shedding=True, include_bat=True)
+    numGen  = 3
+    MINCOST = 0
+    for i in range(numGen):
+        pp.create_poly_cost(net, i ,'gen', cp1_eur_per_mw=MINCOST)
+    
+    net.trafo['max_loading_percent']=100
+    net.line['max_loading_percent'] =100
+    if relax_vm is not None:
+        net.bus["min_vm_pu"] = relax_vm[0]
+        net.bus["max_vm_pu"] = relax_vm[1]
+    print('Simulating scenarios with overloading lines and proposing corrective actions with load shedding + battery. This may take some time...')
+    totalcost = 0
+    #Create function costs:
+   
+    PGEN = np.load('results\\ECOPSOL.NPY') #(g,s,t)
+    DEM = np.load('results\\ECODEM.npy') #(i,t)
+    
+    if(verbose): 
+        print('Evaluating Loading Shedding + Battery SIPS ')
+    numcases = len(datacont)
+    EVALSIPSBATTERYLOADSHEDDING = np.ndarray((numcases,3,2))
+    for i in range(len(datacont)):
+        t = datacont[i][0]
+        s = datacont[i][1]
+        if(verbose):
+            print('------------------------')
+            print('Case:',i+1,'/',numcases)
+            print('Scenario:',s)
+            print('Hour:',t)
+        cost,EVALSIPSBATTERYLOADSHEDDING[i] = evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL,GENDATA,DEMDATA, print_results=print_results)
+        totalcost = totalcost+cost
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING',EVALSIPSBATTERYLOADSHEDDING)
+    if(print_results):
+        print('------------------------')
+        print('Costos Totales:',totalcost)
+    return totalcost
+# =============================================================================
+# LINE SWITCHING
+# =============================================================================

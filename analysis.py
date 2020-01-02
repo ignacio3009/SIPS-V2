@@ -33,8 +33,8 @@ def evaluatesipsbattery(relax_vm=None, tolerance=1.3):
     datacont = cont.getInstancesLineLimitsViolations(tolerance=tolerance)
     # datacont = [(23,4)]
     #SIPS 1: Baterias
-    costsipsbat = sipscreator.sipsbattery(datacont,relax_vm,print_results=True, verbose=True)
-    print('Costos Operación SIPSBAT', costsipsbat,'USD')
+    costsips = sipscreator.sipsbattery(datacont,relax_vm,print_results=True, verbose=True)
+    print('Costos Operación SIPSBAT', costsips,'USD')
     evalsipsbat = np.load('results\\EVALSIPSBAT.npy') # (nsl,3,2)
     
     pmaxbat= [0,0,0]
@@ -74,69 +74,23 @@ def evaluatesipsbattery(relax_vm=None, tolerance=1.3):
 
 
 
-evaluatesipsbattery(relax_vm=[0.85, 1.15])
-# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
-# cost = sipscreator.sipsloadshedding(datacont,print_results=True,verbose=True)
-# #SIPS 1: Baterias
-# costsipsbat = sipscreator.sipsloadshedding(datacont,print_results=True,verbose=True)
+# evaluatesipsbattery(relax_vm=[0.85, 1.15])
+    
+def evaluatesipsloadshedding(relax_vm=None, tolerance=1.3):
+    datacont = cont.getInstancesLineLimitsViolations(tolerance=tolerance)
+    costsips = sipscreator.sipsloadshedding(datacont,relax_vm,print_results=True, verbose=True)
+    print('Costos Operación SIPSLOADSHEDDING', costsips,'USD')
 
 
+def evaluatesipsbatteryloadshedding(relax_vm=None, tolerance=1.3):
+    datacont = cont.getInstancesLineLimitsViolations(tolerance=tolerance)
+    costsips = sipscreator.sipsbatteryloadshedding(datacont,relax_vm,print_results=True, verbose=True)
+    print('Costos Operación SIPSBATTERYLOADSHEDDING', costsips,'USD')
 
-# datacont = cont.getInstancesLineLimitsViolations(tolerance=1.3)
-# print('Number of points out of limits:',len(datacont),'/',24*7)
+# evaluatesipsloadshedding(relax_vm=[0.85, 1.15],tolerance=1.3)
+evaluatesipsbatatery(relax_vm=[0.85, 1.15], tolerance=1.3)
+# evaluatesipsbatteryloadshedding(relax_vm=[0.9, 1.15], tolerance=1.3)
 
-
-
-
-
-
-
-
-# import numpy as np
-# import xlwings as xw
-# import matplotlib.pyplot as plt
-
-# wbd = xw.Book('data_3_bus.xlsx')
-# sd = wbd.sheets['data']
-
-# GENDATA = sd.range('A4:N6').value
-# DEMDATA = sd.range('P4:R6').value
-# LINDATA = sd.range('T4:Z6').value
-# BATDATA = sd.range('AB4:AM6').value
-
-# # PGEN = np.load('results\\ECOPSOL.npy') 
-# # DEM =  np.load('results\\ECODEM.npy') 
-# # NGen = 3
-# # NHrs = 24
-# # numGen = range(NGen)
-# # numHrs = range(NHrs)
-
-# # pgen = []
-# # dem = []
-# # scen = 6
-# # for t in numHrs:
-# #     totalpgenhour = sum(PGEN[:,scen,t])
-# #     pgen.append(totalpgenhour)
-# #     totaldemhour = sum(DEM[:,t])
-# #     dem.append(totaldemhour)
-
-# # plt.plot(pgen,  label='Generation')
-# # plt.plot(dem, label = 'Demand')
-# # plt.title('Demand and Generation Scenario '+str(scen))
-# # plt.ylabel('[MW]')
-# # plt.xlabel('Hour')
-# # plt.legend()
-
-# # notconv = np.load('results\\SIMNOTCONV.npy') 
-# # # PGEN = np.load('results\\ECOPSOL.npy') 
-# # # DEM =  np.load('results\\ECODEM.npy') 
-# simgen = np.load('results\\SIMGEN.npy')
-# # x = notconv[0]
-# # s=x[0]
-# # t=x[1]
-# # print(notconv)
-# # # print(simgen)
-# print(simgen[0,2,0,:])
 
 
 # #Medidas posibles:

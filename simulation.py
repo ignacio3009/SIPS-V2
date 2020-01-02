@@ -67,7 +67,7 @@ def createnet(include_load_shedding=False, include_bat=False):
     # =========================================================================
     for i in range(numdem):
         pp.create_load(net, index=i, bus=DEMDATA[i][0], p_mw = DEMDATA[i][1], q_mvar=DEMDATA[i][2],
-                       max_p_mw = DEMDATA[i][1], min_p_mw=DEMDATA[i][4], 
+                       max_p_mw = DEMDATA[i][1], min_p_mw=DEMDATA[i][1], 
                        max_q_mvar = DEMDATA[i][2], min_q_mvar=DEMDATA[i][5],
                        controllable = include_load_shedding)
         pp.create_poly_cost(net,i,'load',cp1_eur_per_mw=DEMDATA[i][3])

@@ -69,3 +69,8 @@ def loadreserves(filename='data_3_bus.xlsx'):
 def loadgendata(filename='data_3_bus.xlsx'):
     GENDATA,DEMDATA,LINDATA,STODATA = loadsystemdata()
     return GENDATA
+
+
+def loaddemdata(filename='data_3_bus.xlsx'):
+    GENDATA,DEMDATA,LINDATA,STODATA = loadsystemdata()
+    return DEMDATA

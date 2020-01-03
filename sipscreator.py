@@ -273,7 +273,7 @@ def evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,DEMDATA, print_re
         return net.res_cost, net.res_load.values
     except:
         print('OPF not converges')
-        print('Pgen:', PGEN[:,s,t])
+        print('Pgen:', PGEN[:,0,t])
         print('Dem:',DEM[:,t])
         return INF, np.ndarray((3,2))
     
@@ -318,6 +318,7 @@ def sipsbatteryloadshedding(datacont, relax_vm=None, print_results=False, verbos
     if(print_results):
         print('------------------------')
         print('Costos Totales:',totalcost)
+    print(net.poly_cost)
     return totalcost
 # =============================================================================
 # LINE SWITCHING

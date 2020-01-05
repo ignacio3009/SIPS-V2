@@ -60,7 +60,7 @@ def run(lin,relaxcapacity,verbose=False):
     #Line data
     FMAX =      LINDATA[:,1]
     XL =        LINDATA[:,4]
-
+    LENGTHLINE= LINDATA[:,6]
     #Demand data
     DEMRES, DEMIND, DEMCOM  = ld.loadcurvedata()    
     D = np.array([DPMAX[0]*DEMRES,DPMAX[1]*DEMIND,DPMAX[2]*DEMCOM])
@@ -99,12 +99,13 @@ def run(lin,relaxcapacity,verbose=False):
     #crecimiento capacidad en MW
     fcap = 100 
     #crecimiento generacion
-    fgen=1.1
+    fgen = 1.07
     # =============================================================================
     #     COSTOS DE INVERSION POR MW
     # =============================================================================
-    CINVLIN = 
-    CINVBAT = 87000
+    CINVLIN = 740*LENGTHLINE[0]
+    CINVBAT = 400000
+    print(CINVLIN*fcap)
     
     # =============================================================================
     # HORIZONTE PLANIFICACION    

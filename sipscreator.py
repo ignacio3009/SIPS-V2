@@ -229,8 +229,8 @@ def sipsloadshedding(datacont, relax_vm=None, print_results=False, verbose=False
 # LOAD SHEDDING + BATTERIES
 # =============================================================================
 def evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,DEMDATA, print_results=False, verbose=False):
-    print('PGEN:',PGEN[:,0,t])
-    print('DEM:',DEM[:,t ])
+    # print('PGEN:',PGEN[:,0,t])
+    # print('DEM:',DEM[:,t ])
     net = confignet(net,t,s,PGEN,DEM,XSOL,GENDATA)
     
     numGen = 3
@@ -270,7 +270,7 @@ def evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL, GENDATA,DEMDATA, print_re
             print(net.res_gen)
             print('Line Loading')
             print(net.res_line['loading_percent'][:])
-        return net.res_cost, net.res_load.values
+        return net.res_cost, net.res_load.values, net.res_storage.values, net.res_line.values, net.res_gen.values, net.res_bus.values
     except:
         print('OPF not converges')
         print('Pgen:', PGEN[:,0,t])
@@ -293,7 +293,7 @@ def sipsbatteryloadshedding(datacont, relax_vm=None, print_results=False, verbos
     if relax_vm is not None:
         net.bus["min_vm_pu"] = relax_vm[0]
         net.bus["max_vm_pu"] = relax_vm[1]
-    print('Simulating scenarios with overloading lines and proposing corrective actions with load shedding + battery. This may take some time...')
+    # print('Simulating scenarios with overloading lines and proposing corrective actions with load shedding + battery. This may take some time...')
     totalcost = 0
     #Create function costs:
    
@@ -303,7 +303,11 @@ def sipsbatteryloadshedding(datacont, relax_vm=None, print_results=False, verbos
     if(verbose): 
         print('Evaluating Loading Shedding + Battery SIPS ')
     numcases = len(datacont)
-    EVALSIPSBATTERYLOADSHEDDING = np.ndarray((numcases,3,2))
+    EVALSIPSBATTERYLOADSHEDDING_B = np.ndarray((numcases,3,2))
+    EVALSIPSBATTERYLOADSHEDDING_D = np.ndarray((numcases,3,2))
+    EVALSIPSBATTERYLOADSHEDDING_L = np.ndarray((numcases,3,14))
+    EVALSIPSBATTERYLOADSHEDDING_G = np.ndarray((numcases,3,4))
+    EVALSIPSBATTERYLOADSHEDDING_N = np.ndarray((numcases,6,6))
     for i in range(len(datacont)):
         t = datacont[i][0]
         s = datacont[i][1]
@@ -312,13 +316,17 @@ def sipsbatteryloadshedding(datacont, relax_vm=None, print_results=False, verbos
             print('Case:',i+1,'/',numcases)
             print('Scenario:',s)
             print('Hour:',t)
-        cost,EVALSIPSBATTERYLOADSHEDDING[i] = evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL,GENDATA,DEMDATA, print_results=print_results)
+        cost,EVALSIPSBATTERYLOADSHEDDING_D[i],EVALSIPSBATTERYLOADSHEDDING_B[i],EVALSIPSBATTERYLOADSHEDDING_L[i],  EVALSIPSBATTERYLOADSHEDDING_G[i],  EVALSIPSBATTERYLOADSHEDDING_N[i] = evalsipsbatteryloadshedding(net,t,s,PGEN,DEM,XSOL,GENDATA,DEMDATA, print_results=print_results)
         totalcost = totalcost+cost
-    np.save('results\\EVALSIPSBATTERYLOADSHEDDING',EVALSIPSBATTERYLOADSHEDDING)
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING_D',EVALSIPSBATTERYLOADSHEDDING_D)
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING_B',EVALSIPSBATTERYLOADSHEDDING_B)
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING_L',EVALSIPSBATTERYLOADSHEDDING_L)
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING_G',EVALSIPSBATTERYLOADSHEDDING_G)
+    np.save('results\\EVALSIPSBATTERYLOADSHEDDING_N',EVALSIPSBATTERYLOADSHEDDING_N)
     if(print_results):
         print('------------------------')
         print('Costos Totales:',totalcost)
-    print(net.poly_cost)
+    # print(net.poly_cost)
     return totalcost
 # =============================================================================
 # LINE SWITCHING

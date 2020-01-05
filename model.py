@@ -10,6 +10,8 @@ import numpy as np
 import xlwings as xw
 from gurobipy import quicksum
 import loaddata as ld
+np.set_printoptions(precision=1,suppress=True)
+
 
 # =============================================================================
 # READ DATA
@@ -69,8 +71,10 @@ def run(verbose=False):
     DEMRES, DEMIND, DEMCOM  = ld.loadcurvedata()
     
     D = np.array([DPMAX[0]*DEMRES,DPMAX[1]*DEMIND,DPMAX[2]*DEMCOM])
-    
-    
+    # =============================================================================
+    #     COSTO ENERGIA NO SUMINISTRADA
+    # =============================================================================
+    CENS  = 10000 #Usd/MW
     
     # =============================================================================
     # DEFINE VARIABLES
@@ -92,11 +96,13 @@ def run(verbose=False):
     rdown = model.addVars(NGen,NSce,NHrs, vtype = GRB.CONTINUOUS)
     xrup =  model.addVars(NGen,NSce,NHrs, vtype = GRB.BINARY)
     xrdown = model.addVars(NGen,NSce,NHrs, vtype = GRB.BINARY)
+    dns  =  model.addVars(NBar, NSce, NHrs, vtype=GRB.CONTINUOUS)
     
     #Objective Function
-    Objective = quicksum(quicksum(CV[g]*p[g,0,t] + CENC[g]*e[g,t] + CAPG[g]*a[g,t] for g in numGen) + 
-                quicksum(PROB[s-1]*quicksum(CV[g]*p[g,s,t]  + CRUP[g]*rup[g,s,t] + CRDOWN[g]* rdown[g,s,t] for g in numGen) 
-                         for s in numScF) for t in numHrs)
+    Objective = quicksum(quicksum(CV[g]*p[g,0,t] + CENC[g]*e[g,t] + CAPG[g]*a[g,t] + dns[g,0,t]*CENS for g in numGen) + 
+                quicksum(PROB[s-1]*quicksum(CV[g]*p[g,s,t]  + CRUP[g]*rup[g,s,t] + CRDOWN[g]* rdown[g,s,t] + dns[g,s,t]*CENS
+                                            for g in numGen) for s in numScF) for t in numHrs)
+        
                 
     #Contraints
     
@@ -149,9 +155,9 @@ def run(verbose=False):
     #Nodal Balancing por scenarios pre and post failure
     for t in numHrs:
         for s in numSce:
-             model.addConstr(p[0,s,t] == D[0,t] + f[0,s,t] + f[2,s,t])
-             model.addConstr(p[1,s,t] + f[0,s,t] == D[1,t] + f[1,s,t])
-             model.addConstr(p[2,s,t] + f[2,s,t] + f[1,s,t] == D[2,t])
+             model.addConstr(p[0,s,t] == D[0,t] + f[0,s,t] + f[2,s,t] - dns[0,s,t])
+             model.addConstr(p[1,s,t] + f[0,s,t] == D[1,t] + f[1,s,t] - dns[1,s,t])
+             model.addConstr(p[2,s,t] + f[2,s,t] + f[1,s,t] == D[2,t] - dns[2,s,t])
     
     #Availability of elements
     for t in numHrs:
@@ -183,7 +189,7 @@ def run(verbose=False):
     model.optimize()
    
     print('Costos Totales:',model.objVal)
-                
+    
     # =============================================================================
     # SAVE RESULTS
     # ============================================================================= 
@@ -198,7 +204,8 @@ def run(verbose=False):
     rdownsol =  np.array([[[rdown[g,s,t].X for t in numHrs] for s in numSce] for g in numGen])
     xrupsol =   np.array([[[xrup[g,s,t].X for t in numHrs] for s in numSce] for g in numGen])
     xrdownsol = np.array([[[xrdown[g,s,t].X for t in numHrs] for s in numSce] for g in numGen])
-    
+    dnssol =    np.array([[[dns[g,s,t].X for t in numHrs] for s in numSce] for g in numGen])
+    # print(dnssol)
     
     np.save('results\\ECOPSOL',psol)
     np.save('results\\ECOXSOL',xsol)
